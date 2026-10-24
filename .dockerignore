@@ -1,0 +1,14 @@
+.git
+.gitignore
+.github
+.vscode
+.idea
+.env
+.env.*
+*.md
+docs
+web
+docker-compose*.yml
+**/node_modules
+**/*.log
+**/tmp

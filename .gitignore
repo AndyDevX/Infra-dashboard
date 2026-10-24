@@ -1,5 +1,38 @@
+# Secrets and local config
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Logs and temp
 *.log
-node_modules/
+tmp/
+.cache/
+
+# Go
 server/bin/
+*.exe
+*.test
+*.out
+coverage.*
+go.work
+go.work.sum
+vendor/
+
+# Node / frontend tooling
+node_modules/
+dist/
+.parcel-cache/
+
+# Docker local data
+data/
+volumes/
+docker-compose.override.yml
+
+# Editors and OS
+.idea/
+.vscode/
+*.swp
 .DS_Store
+Thumbs.db
