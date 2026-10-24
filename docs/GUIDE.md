@@ -18,6 +18,77 @@ Links are official docs unless noted.
 | 9 | CI/CD and Pages | GitHub Actions, GitHub Pages |
 | 10 | Stretch | Prometheus metrics, MongoDB history, Grafana |
 
+## Where does each thing go
+
+Target layout. Folders marked *(later)* don't exist yet; create them when you reach that stage.
+
+```
+infra-dashboard/
+├── web/                        # frontend, static (this is what GitHub Pages serves)
+│   ├── index.html              # page layout and containers for the components
+│   ├── css/app.css             # custom styles on top of Tailwind (later)
+│   ├── demo/sample.json        # recorded metrics for replay mode (later)
+│   └── js/
+│       ├── main.js             # wiring only: pick source, feed state, render
+│       ├── sources/            # data sources: mock, WebSocket (done)
+│       ├── state/store.js      # latest sample + history buffer for charts (later)
+│       ├── components/         # one file per widget: cpu-chart.js, container-table.js... (later)
+│       └── utils/format.js     # formatBytes, formatUptime, small pure helpers (later)
+├── server/                     # Go backend
+│   ├── main.go                 # wiring only: config, start collectors, start HTTP server
+│   ├── internal/
+│   │   ├── metrics/            # host.go (gopsutil), docker.go (Docker API) (later)
+│   │   ├── hub/hub.go          # fans samples out to every connected client (later)
+│   │   └── api/                # health.go, ws.go: HTTP and WebSocket handlers (later)
+│   ├── go.mod
+│   └── Dockerfile
+├── deploy/                     # Swarm stack file and Traefik config (later)
+├── .github/workflows/          # ci.yml (tests, vet), pages.yml (deploy the demo) (later)
+├── docs/                       # GUIDE.md, CONTRACT.md, notes
+├── docker-compose.yml          # local development
+└── .env.example                # documented variables, never real values (later)
+```
+
+### Quick answers
+
+| If you are writing... | Put it in |
+|---|---|
+| A new chart, card or table | `web/js/components/<name>.js`, mounted from `main.js` |
+| Something that holds data between messages (history for charts) | `web/js/state/store.js` |
+| A formatter or small helper | `web/js/utils/` |
+| A new way to get data (e.g. replaying a file) | `web/js/sources/`, extending `DataSource` |
+| Recorded sample data for the demo | `web/demo/sample.json` |
+| Reading CPU, RAM or disk | `server/internal/metrics/host.go` |
+| Reading container stats from Docker | `server/internal/metrics/docker.go` |
+| Sending samples to browsers | `server/internal/hub/` and `server/internal/api/ws.go` |
+| A new HTTP route | `server/internal/api/` |
+| Env vars and config | read in `server/main.go`, document in `.env.example` |
+| Swarm stack, Traefik labels | `deploy/` |
+| A GitHub Actions workflow | `.github/workflows/` |
+| Notes on what you learned | `docs/` |
+
+### Rules of thumb
+
+- **`main.js` and `main.go` only wire things together.** Logic goes in its own file or package.
+- **Change the message format in `docs/CONTRACT.md` first**, bump `v`, then update the mock and the Go
+  backend. Both must keep emitting the same shape.
+- **Anything inside `server/internal/` can't be imported from outside the module.** That's intended.
+- **Never commit real secrets.** Put them in `.env` (ignored) and list the names in `.env.example`.
+- **Keep the mock working.** The Pages demo depends on it, so test with `?demo=1` before pushing.
+
+### Which stage touches what
+
+| Stage | Files |
+|---|---|
+| 2 Host metrics | `server/internal/metrics/host.go` |
+| 3 Container metrics | `server/internal/metrics/docker.go` |
+| 4 WebSocket | `server/internal/hub/`, `server/internal/api/ws.go`, `web/js/sources/websocket.js` |
+| 5 Charts | `web/js/components/`, `web/js/state/store.js` |
+| 6 Demo mode | `web/js/sources/mock.js`, optionally `web/demo/sample.json` |
+| 7 Reverse proxy | `docker-compose.yml`, Traefik labels |
+| 8 Swarm | `deploy/` |
+| 9 CI/CD and Pages | `.github/workflows/` |
+
 ## Go (backend)
 
 - [A Tour of Go](https://go.dev/tour/) · [Getting started tutorial](https://go.dev/doc/tutorial/getting-started)
